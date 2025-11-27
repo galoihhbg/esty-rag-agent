@@ -34,10 +34,12 @@ class RagEngine:
     def get_embedding(self, text):
         """Chuyển text thành vector (theo model embeddings)"""
         if self.test_mode:
-            # Test mode: trả về vector giả định (384 dimensions cho text-embedding-3-small)
+            # Test mode: trả về vector giả định
+            # text-embedding-3-small returns 1536 dimensions by default
             import hashlib
+            EMBEDDING_DIMENSIONS = 1536
             hash_val = int(hashlib.md5(text.encode()).hexdigest(), 16)
-            return [float((hash_val >> i) & 1) for i in range(384)]
+            return [float((hash_val >> (i % 128)) & 1) for i in range(EMBEDDING_DIMENSIONS)]
         
         text = text.replace("\n", " ")
         response = self.ai_client.embeddings.create(

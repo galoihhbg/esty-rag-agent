@@ -1,5 +1,6 @@
 """
 Database Module - Quản lý kết nối và operations với PostgreSQL/SQLite
+Supports both PostgreSQL (production) and SQLite (testing/development)
 """
 import os
 from typing import List, Dict, Any, Optional
@@ -53,9 +54,9 @@ class PredictionLog(Base):
     id = Column(Integer, primary_key=True)
     user_input = Column(Text, nullable=False)
     config_used = Column(JSON)
-    color_list = Column(JSON)  # Store as JSON for SQLite compatibility
+    color_list = Column(JSON)  # Store as JSON for cross-database compatibility
     result = Column(JSON)
-    used_examples = Column(JSON)  # Store as JSON for SQLite compatibility
+    used_examples = Column(JSON)  # Store as JSON for cross-database compatibility
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
