@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, validator
 from typing import List, Union, Optional, Any
 from rag_engine import RagEngine
 from prompt_manager import assemble_prompt
+from database import DatabaseManager
 from openai import OpenAI
 import os
 import json
@@ -14,9 +17,16 @@ app = FastAPI(title="Etsy RAG Agent")
 if os.getenv("TESTING", "0") != "1":
     rag = RagEngine()
     ai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    db = DatabaseManager()
 else:
     rag = RagEngine(test_mode=True)
     ai_client = None
+    db = DatabaseManager(test_mode=True)
+
+# Mount static files
+static_path = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_path):
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 # --- Data Models ---
 class ConfigField(BaseModel):
@@ -136,3 +146,136 @@ async def predict_order(data: PredictRequest):
         return {"error": str(e), "raw_response": locals().get('raw_result', '')}
 
 # Lệnh chạy: uvicorn main:app --reload
+
+# --- Root / UI ---
+@app.get("/")
+async def root():
+    """Serve the main UI"""
+    static_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    if os.path.exists(static_path):
+        return FileResponse(static_path)
+    return {"message": "Etsy RAG Agent API. Visit /docs for API documentation."}
+
+# --- API Endpoints for Database Operations ---
+
+# Training Examples API
+class TrainingExampleCreate(BaseModel):
+    user_input: str
+    correct_output: str  # JSON string
+    category: str = "general"
+
+@app.get("/api/training-examples")
+async def get_training_examples(category: Optional[str] = None, validated_only: bool = False):
+    """Lấy danh sách training examples"""
+    return db.get_training_examples(category=category, validated_only=validated_only)
+
+@app.post("/api/training-examples")
+async def create_training_example(data: TrainingExampleCreate):
+    """Thêm training example mới"""
+    try:
+        # Validate JSON
+        output_parsed = json.loads(data.correct_output)
+        
+        # Save to database
+        example_id = db.add_training_example(
+            user_input=data.user_input,
+            correct_output=output_parsed,
+            category=data.category
+        )
+        
+        # Also add to RAG engine
+        rag.add_example(data.user_input, data.correct_output, data.category)
+        
+        return {"status": "success", "id": example_id}
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="correct_output must be valid JSON")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/training-examples/{example_id}/validate")
+async def validate_training_example(example_id: int):
+    """Đánh dấu training example đã validate"""
+    success = db.validate_training_example(example_id)
+    if success:
+        return {"status": "success"}
+    raise HTTPException(status_code=404, detail="Example not found")
+
+@app.delete("/api/training-examples/{example_id}")
+async def delete_training_example(example_id: int):
+    """Xóa training example"""
+    success = db.delete_training_example(example_id)
+    if success:
+        return {"status": "success"}
+    raise HTTPException(status_code=404, detail="Example not found")
+
+# Config Fields API
+class ConfigFieldCreate(BaseModel):
+    name: str
+    type: str
+    options: Optional[dict] = None
+    is_required: bool = True
+
+@app.get("/api/config-fields")
+async def get_config_fields():
+    """Lấy danh sách config fields"""
+    return db.get_config_fields()
+
+@app.post("/api/config-fields")
+async def create_config_field(data: ConfigFieldCreate):
+    """Thêm config field mới"""
+    try:
+        field_id = db.add_config_field(
+            name=data.name,
+            field_type=data.type,
+            options=data.options,
+            is_required=data.is_required
+        )
+        return {"status": "success", "id": field_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/config-fields/{field_id}")
+async def delete_config_field(field_id: int):
+    """Xóa config field"""
+    success = db.delete_config_field(field_id)
+    if success:
+        return {"status": "success"}
+    raise HTTPException(status_code=404, detail="Field not found")
+
+# Colors API
+class ColorCreate(BaseModel):
+    name: str
+    hex_code: Optional[str] = None
+
+@app.get("/api/colors")
+async def get_colors():
+    """Lấy danh sách colors"""
+    return db.get_colors()
+
+@app.post("/api/colors")
+async def create_color(data: ColorCreate):
+    """Thêm color mới"""
+    try:
+        color_id = db.add_color(name=data.name, hex_code=data.hex_code)
+        return {"status": "success", "id": color_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/colors/{color_id}")
+async def delete_color(color_id: int):
+    """Xóa color"""
+    success = db.delete_color(color_id)
+    if success:
+        return {"status": "success"}
+    raise HTTPException(status_code=404, detail="Color not found")
+
+# Stats and Validation API
+@app.get("/api/stats")
+async def get_stats():
+    """Lấy thống kê về dữ liệu"""
+    return db.get_validation_stats()
+
+@app.get("/api/logs")
+async def get_logs(limit: int = 100):
+    """Lấy prediction logs"""
+    return db.get_prediction_logs(limit=limit)

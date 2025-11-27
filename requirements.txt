@@ -6,3 +6,8 @@ python-dotenv
 pydantic
 pytest
 httpx
+psycopg2-binary
+sqlalchemy
+python-multipart
+jinja2
+aiofiles

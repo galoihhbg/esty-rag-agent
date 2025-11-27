@@ -58,3 +58,7 @@ coverage/
 *.project
 *.pydevproject
 *.classpath
+
+# Data directories
+data/
+postgres_data/
