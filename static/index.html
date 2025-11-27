@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etsy RAG Agent - Dashboard</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 10px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn:hover, .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #2ed573;
+            color: white;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .validation-status {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .validation-status.sufficient {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+        
+        .validation-status.insufficient {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+        }
+        
+        .validation-status h4 {
+            margin-bottom: 10px;
+        }
+        
+        .validation-status ul {
+            margin-left: 20px;
+        }
+        
+        .action-btns {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btns button {
+            padding: 8px 15px;
+            font-size: 0.85rem;
+        }
+        
+        .json-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #667eea;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .color-preview {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛍️ Etsy RAG Agent</h1>
+            <p>Hệ thống xử lý đơn hàng thông minh với AI</p>
+        </header>
+        
+        <!-- Dashboard Stats -->
+        <div class="dashboard">
+            <div class="stat-card">
+                <h3>📚 Training Examples</h3>
+                <div class="stat-value" id="stat-examples">-</div>
+                <div class="stat-label">Tổng số ví dụ đã học</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-validated" style="width: 0%"></div>
+                </div>
+                <div class="stat-label" style="margin-top: 5px">
+                    <span id="stat-validated">0</span> đã validate / <span id="stat-unvalidated">0</span> chưa validate
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>📋 Config Fields</h3>
+                <div class="stat-value" id="stat-fields">-</div>
+                <div class="stat-label">Trường dữ liệu cấu hình</div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>🎨 Colors</h3>
+                <div class="stat-value" id="stat-colors">-</div>
+                <div class="stat-label">Màu sắc trong hệ thống</div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>📊 Predictions</h3>
+                <div class="stat-value" id="stat-predictions">-</div>
+                <div class="stat-label">Lượt dự đoán đã thực hiện</div>
+            </div>
+        </div>
+        
+        <!-- Validation Status -->
+        <div class="validation-status" id="validation-status">
+            <h4>⏳ Đang kiểm tra trạng thái dữ liệu...</h4>
+        </div>
+        
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="training">📚 Training Data</button>
+            <button class="tab-btn" data-tab="config">📋 Config Fields</button>
+            <button class="tab-btn" data-tab="colors">🎨 Colors</button>
+            <button class="tab-btn" data-tab="predict">🔮 Predict</button>
+            <button class="tab-btn" data-tab="logs">📊 Logs</button>
+        </div>
+        
+        <!-- Training Tab -->
+        <div class="tab-content active" id="tab-training">
+            <h2 style="margin-bottom: 20px">Thêm Training Example</h2>
+            <form id="training-form">
+                <div class="form-group">
+                    <label>User Input (Nội dung từ khách hàng)</label>
+                    <textarea id="train-input" placeholder="VD: Blue - 2022&#10;Red - John"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Correct Output (JSON kết quả mong đợi)</label>
+                    <textarea id="train-output" placeholder='[{"Color": "Blue", "Year": "2022"}, {"Color": "Red", "Name": "John"}]'></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="train-category">
+                        <option value="general">General</option>
+                        <option value="color">Color</option>
+                        <option value="personalization">Personalization</option>
+                        <option value="complex">Complex</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Lưu Example</button>
+            </form>
+            
+            <h3 style="margin-top: 40px; margin-bottom: 20px">Danh sách Training Examples</h3>
+            <div class="table-container">
+                <table id="training-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Input</th>
+                            <th>Output</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="training-tbody">
+                        <tr><td colspan="6" class="loading">Đang tải dữ liệu</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Config Fields Tab -->
+        <div class="tab-content" id="tab-config">
+            <h2 style="margin-bottom: 20px">Thêm Config Field</h2>
+            <form id="config-form">
+                <div class="form-group">
+                    <label>Tên Field</label>
+                    <input type="text" id="field-name" placeholder="VD: Color, Nickname, Year">
+                </div>
+                <div class="form-group">
+                    <label>Loại Field</label>
+                    <select id="field-type">
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="select">Select</option>
+                        <option value="color">Color</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Options (JSON, tùy chọn)</label>
+                    <textarea id="field-options" placeholder='{"choices": ["Option1", "Option2"]}'></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="field-required" checked> Bắt buộc
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">➕ Thêm Field</button>
+            </form>
+            
+            <h3 style="margin-top: 40px; margin-bottom: 20px">Danh sách Config Fields</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Options</th>
+                            <th>Required</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="config-tbody">
+                        <tr><td colspan="6" class="loading">Đang tải dữ liệu</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Colors Tab -->
+        <div class="tab-content" id="tab-colors">
+            <h2 style="margin-bottom: 20px">Thêm Color</h2>
+            <form id="color-form">
+                <div class="form-group">
+                    <label>Tên màu</label>
+                    <input type="text" id="color-name" placeholder="VD: Blue, Red, Navy">
+                </div>
+                <div class="form-group">
+                    <label>Mã hex (tùy chọn)</label>
+                    <input type="text" id="color-hex" placeholder="#0000FF">
+                </div>
+                <button type="submit" class="btn btn-primary">➕ Thêm Color</button>
+            </form>
+            
+            <h3 style="margin-top: 40px; margin-bottom: 20px">Danh sách Colors</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Preview</th>
+                            <th>Name</th>
+                            <th>Hex Code</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="colors-tbody">
+                        <tr><td colspan="5" class="loading">Đang tải dữ liệu</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Predict Tab -->
+        <div class="tab-content" id="tab-predict">
+            <h2 style="margin-bottom: 20px">🔮 Dự đoán đơn hàng</h2>
+            <form id="predict-form">
+                <div class="form-group">
+                    <label>User Input (Nội dung cần xử lý)</label>
+                    <textarea id="predict-input" placeholder="VD: Blue - John 2022&#10;Red - Mary"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">🚀 Predict</button>
+            </form>
+            
+            <div id="predict-result" style="margin-top: 30px; display: none;">
+                <h3>Kết quả:</h3>
+                <div class="json-preview" id="predict-output"></div>
+                <h4 style="margin-top: 20px">Examples đã sử dụng:</h4>
+                <div id="predict-examples"></div>
+            </div>
+        </div>
+        
+        <!-- Logs Tab -->
+        <div class="tab-content" id="tab-logs">
+            <h2 style="margin-bottom: 20px">📊 Prediction Logs</h2>
+            <button class="btn btn-secondary" onclick="loadLogs()">🔄 Refresh</button>
+            <div class="table-container" style="margin-top: 20px">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Input</th>
+                            <th>Result</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-tbody">
+                        <tr><td colspan="4" class="loading">Đang tải dữ liệu</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '';
+        
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+        
+        // Show alert
+        function showAlert(message, type = 'success') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            document.querySelector('.container').insertBefore(alert, document.querySelector('.dashboard'));
+            setTimeout(() => alert.remove(), 5000);
+        }
+        
+        // Load stats and validation status
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_BASE}/api/stats`);
+                const data = await res.json();
+                
+                document.getElementById('stat-examples').textContent = data.training_examples?.total || 0;
+                document.getElementById('stat-validated').textContent = data.training_examples?.validated || 0;
+                document.getElementById('stat-unvalidated').textContent = data.training_examples?.unvalidated || 0;
+                document.getElementById('stat-fields').textContent = data.config_fields || 0;
+                document.getElementById('stat-colors').textContent = data.colors || 0;
+                document.getElementById('stat-predictions').textContent = data.prediction_logs || 0;
+                
+                const validationRate = data.training_examples?.validation_rate || 0;
+                document.getElementById('progress-validated').style.width = validationRate + '%';
+                
+                // Update validation status
+                const statusEl = document.getElementById('validation-status');
+                if (data.is_data_sufficient) {
+                    statusEl.className = 'validation-status sufficient';
+                    statusEl.innerHTML = `
+                        <h4>✅ Dữ liệu đã sẵn sàng</h4>
+                        <p>Hệ thống có đủ dữ liệu để hoạt động tốt.</p>
+                    `;
+                } else {
+                    statusEl.className = 'validation-status insufficient';
+                    let warnings = [];
+                    if ((data.training_examples?.total || 0) < 10) {
+                        warnings.push(`Cần thêm ${10 - (data.training_examples?.total || 0)} training examples (hiện có ${data.training_examples?.total || 0}/10)`);
+                    }
+                    if ((data.training_examples?.validated || 0) < 5) {
+                        warnings.push(`Cần validate thêm ${5 - (data.training_examples?.validated || 0)} examples (hiện có ${data.training_examples?.validated || 0}/5 validated)`);
+                    }
+                    if ((data.config_fields || 0) === 0) {
+                        warnings.push('Chưa có config fields nào');
+                    }
+                    if ((data.colors || 0) === 0) {
+                        warnings.push('Chưa có colors nào');
+                    }
+                    
+                    statusEl.innerHTML = `
+                        <h4>⚠️ Cần bổ sung dữ liệu</h4>
+                        <ul>${warnings.map(w => `<li>${w}</li>`).join('')}</ul>
+                    `;
+                }
+            } catch (err) {
+                console.error('Error loading stats:', err);
+            }
+        }
+        
+        // Load training examples
+        async function loadTrainingExamples() {
+            try {
+                const res = await fetch(`${API_BASE}/api/training-examples`);
+                const data = await res.json();
+                
+                const tbody = document.getElementById('training-tbody');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center">Chưa có dữ liệu</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.map(ex => `
+                    <tr>
+                        <td>${ex.id}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${escapeHtml(ex.user_input)}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${escapeHtml(JSON.stringify(ex.correct_output))}</td>
+                        <td>${ex.category}</td>
+                        <td>
+                            <span class="badge ${ex.is_validated ? 'badge-success' : 'badge-warning'}">
+                                ${ex.is_validated ? 'Validated' : 'Pending'}
+                            </span>
+                        </td>
+                        <td class="action-btns">
+                            ${!ex.is_validated ? `<button class="btn btn-success" onclick="validateExample(${ex.id})">✓</button>` : ''}
+                            <button class="btn btn-danger" onclick="deleteExample(${ex.id})">🗑</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading examples:', err);
+            }
+        }
+        
+        // Load config fields
+        async function loadConfigFields() {
+            try {
+                const res = await fetch(`${API_BASE}/api/config-fields`);
+                const data = await res.json();
+                
+                const tbody = document.getElementById('config-tbody');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center">Chưa có dữ liệu</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.map(f => `
+                    <tr>
+                        <td>${f.id}</td>
+                        <td>${escapeHtml(f.name)}</td>
+                        <td>${f.type}</td>
+                        <td>${f.options ? escapeHtml(JSON.stringify(f.options)) : '-'}</td>
+                        <td>${f.is_required ? 'Yes' : 'No'}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteConfigField(${f.id})">🗑</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading config fields:', err);
+            }
+        }
+        
+        // Load colors
+        async function loadColors() {
+            try {
+                const res = await fetch(`${API_BASE}/api/colors`);
+                const data = await res.json();
+                
+                const tbody = document.getElementById('colors-tbody');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center">Chưa có dữ liệu</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.map(c => `
+                    <tr>
+                        <td>${c.id}</td>
+                        <td><span class="color-preview" style="background: ${c.hex_code || '#ccc'}"></span></td>
+                        <td>${escapeHtml(c.name)}</td>
+                        <td>${c.hex_code || '-'}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteColor(${c.id})">🗑</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading colors:', err);
+            }
+        }
+        
+        // Load logs
+        async function loadLogs() {
+            try {
+                const res = await fetch(`${API_BASE}/api/logs`);
+                const data = await res.json();
+                
+                const tbody = document.getElementById('logs-tbody');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center">Chưa có dữ liệu</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.map(log => `
+                    <tr>
+                        <td>${log.id}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${escapeHtml(log.user_input)}</td>
+                        <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${escapeHtml(JSON.stringify(log.result))}</td>
+                        <td>${new Date(log.created_at).toLocaleString('vi-VN')}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading logs:', err);
+            }
+        }
+        
+        // Form submissions
+        document.getElementById('training-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userInput = document.getElementById('train-input').value;
+            const correctOutput = document.getElementById('train-output').value;
+            const category = document.getElementById('train-category').value;
+            
+            try {
+                JSON.parse(correctOutput);
+            } catch {
+                showAlert('Output phải là JSON hợp lệ', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/training-examples`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_input: userInput,
+                        correct_output: correctOutput,
+                        category: category
+                    })
+                });
+                
+                if (res.ok) {
+                    showAlert('Đã thêm training example thành công!');
+                    document.getElementById('train-input').value = '';
+                    document.getElementById('train-output').value = '';
+                    loadTrainingExamples();
+                    loadStats();
+                } else {
+                    const err = await res.json();
+                    showAlert(err.detail || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (err) {
+                showAlert('Có lỗi xảy ra: ' + err.message, 'error');
+            }
+        });
+        
+        document.getElementById('config-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('field-name').value;
+            const type = document.getElementById('field-type').value;
+            const optionsStr = document.getElementById('field-options').value;
+            const isRequired = document.getElementById('field-required').checked;
+            
+            let options = null;
+            if (optionsStr) {
+                try {
+                    options = JSON.parse(optionsStr);
+                } catch {
+                    showAlert('Options phải là JSON hợp lệ', 'error');
+                    return;
+                }
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/config-fields`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, type, options, is_required: isRequired })
+                });
+                
+                if (res.ok) {
+                    showAlert('Đã thêm config field thành công!');
+                    document.getElementById('field-name').value = '';
+                    document.getElementById('field-options').value = '';
+                    loadConfigFields();
+                    loadStats();
+                } else {
+                    const err = await res.json();
+                    showAlert(err.detail || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (err) {
+                showAlert('Có lỗi xảy ra: ' + err.message, 'error');
+            }
+        });
+        
+        document.getElementById('color-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('color-name').value;
+            const hexCode = document.getElementById('color-hex').value;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/colors`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, hex_code: hexCode || null })
+                });
+                
+                if (res.ok) {
+                    showAlert('Đã thêm color thành công!');
+                    document.getElementById('color-name').value = '';
+                    document.getElementById('color-hex').value = '';
+                    loadColors();
+                    loadStats();
+                } else {
+                    const err = await res.json();
+                    showAlert(err.detail || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (err) {
+                showAlert('Có lỗi xảy ra: ' + err.message, 'error');
+            }
+        });
+        
+        document.getElementById('predict-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userInput = document.getElementById('predict-input').value;
+            
+            try {
+                // Get config fields and colors
+                const [fieldsRes, colorsRes] = await Promise.all([
+                    fetch(`${API_BASE}/api/config-fields`),
+                    fetch(`${API_BASE}/api/colors`)
+                ]);
+                
+                const fields = await fieldsRes.json();
+                const colors = await colorsRes.json();
+                
+                if (fields.length === 0) {
+                    showAlert('Cần thêm config fields trước khi predict', 'error');
+                    return;
+                }
+                
+                const res = await fetch(`${API_BASE}/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_input: userInput,
+                        config_json: fields,
+                        color_list: colors.map(c => c.name)
+                    })
+                });
+                
+                const data = await res.json();
+                
+                document.getElementById('predict-result').style.display = 'block';
+                document.getElementById('predict-output').textContent = JSON.stringify(data.result, null, 2);
+                document.getElementById('predict-examples').innerHTML = (data.used_examples || [])
+                    .map(ex => `<div class="badge badge-success" style="margin: 5px">${escapeHtml(ex)}</div>`)
+                    .join('');
+                
+            } catch (err) {
+                showAlert('Có lỗi xảy ra: ' + err.message, 'error');
+            }
+        });
+        
+        // Action handlers
+        async function validateExample(id) {
+            try {
+                const res = await fetch(`${API_BASE}/api/training-examples/${id}/validate`, { method: 'POST' });
+                if (res.ok) {
+                    showAlert('Đã validate example!');
+                    loadTrainingExamples();
+                    loadStats();
+                }
+            } catch (err) {
+                showAlert('Có lỗi xảy ra', 'error');
+            }
+        }
+        
+        async function deleteExample(id) {
+            if (!confirm('Bạn có chắc muốn xóa?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/training-examples/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showAlert('Đã xóa!');
+                    loadTrainingExamples();
+                    loadStats();
+                }
+            } catch (err) {
+                showAlert('Có lỗi xảy ra', 'error');
+            }
+        }
+        
+        async function deleteConfigField(id) {
+            if (!confirm('Bạn có chắc muốn xóa?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/config-fields/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showAlert('Đã xóa!');
+                    loadConfigFields();
+                    loadStats();
+                }
+            } catch (err) {
+                showAlert('Có lỗi xảy ra', 'error');
+            }
+        }
+        
+        async function deleteColor(id) {
+            if (!confirm('Bạn có chắc muốn xóa?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/colors/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showAlert('Đã xóa!');
+                    loadColors();
+                    loadStats();
+                }
+            } catch (err) {
+                showAlert('Có lỗi xảy ra', 'error');
+            }
+        }
+        
+        // Helper function
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Initial load
+        loadStats();
+        loadTrainingExamples();
+        loadConfigFields();
+        loadColors();
+        loadLogs();
+    </script>
+</body>
+</html>

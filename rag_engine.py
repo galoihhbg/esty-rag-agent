@@ -6,14 +6,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class RagEngine:
-    def __init__(self):
-        # Khởi tạo OpenAI Client
-        self.ai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    def __init__(self, test_mode=False):
+        """
+        Khởi tạo RAG Engine.
         
-        # Khởi tạo ChromaDB (Persistent - Lưu trên ổ cứng)
-        db_path = os.getenv("CHROMA_DB_PATH", "./data/chroma_db")
-        # chromadb.PersistentClient lưu trên đĩa theo path
-        self.chroma_client = chromadb.PersistentClient(path=db_path)
+        Args:
+            test_mode: Nếu True, sử dụng in-memory DB và không gọi OpenAI API
+        """
+        self.test_mode = test_mode
+        
+        if test_mode:
+            # Test mode: sử dụng in-memory ChromaDB, không cần OpenAI
+            self.ai_client = None
+            self.chroma_client = chromadb.Client()
+        else:
+            # Production mode: sử dụng OpenAI và Persistent ChromaDB
+            self.ai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            db_path = os.getenv("CHROMA_DB_PATH", "./data/chroma_db")
+            self.chroma_client = chromadb.PersistentClient(path=db_path)
         
         # Tạo hoặc lấy Collection
         collection_name = os.getenv("COLLECTION_NAME", "etsy_knowledge_base")
@@ -23,6 +33,12 @@ class RagEngine:
 
     def get_embedding(self, text):
         """Chuyển text thành vector (theo model embeddings)"""
+        if self.test_mode:
+            # Test mode: trả về vector giả định (384 dimensions cho text-embedding-3-small)
+            import hashlib
+            hash_val = int(hashlib.md5(text.encode()).hexdigest(), 16)
+            return [float((hash_val >> i) & 1) for i in range(384)]
+        
         text = text.replace("\n", " ")
         response = self.ai_client.embeddings.create(
             input=[text], 
