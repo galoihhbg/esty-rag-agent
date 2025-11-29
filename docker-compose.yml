@@ -4,11 +4,11 @@ services:
   web:
     build: .
     ports:
-      - "8000:8000"
+      - "8082:8000"
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql://etsy_user:etsy_password@db:5432/etsy_rag
+      - DATABASE_URL=postgresql://galoihhbg:galoihhbg@db:5432/etsy_rag
     volumes:
       - ./data:/app/data
       - ./static:/app/static
@@ -20,8 +20,8 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: etsy_user
-      POSTGRES_PASSWORD: etsy_password
+      POSTGRES_USER: galoihhbg
+      POSTGRES_PASSWORD: galoihhbg
       POSTGRES_DB: etsy_rag
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -29,7 +29,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U etsy_user -d etsy_rag"]
+      test: ["CMD-SHELL", "pg_isready -U galoihhbg -d etsy_rag"]
       interval: 5s
       timeout: 5s
       retries: 5
